@@ -1,0 +1,12 @@
+[package]
+name = "docker_credential"
+version = "1.0"
+authors = ["Keir Lawson <keirlawson@gmail.com>"]
+edition = "2018"
+description = "Reads a user's docker credentials from config"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+base64 = "0.10.1"

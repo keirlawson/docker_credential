@@ -1,0 +1,26 @@
+use std::collections::HashMap;
+use std::fs::File;
+use serde::Deserialize;
+use std::path::Path;
+use super::{ CredentialRetrievalError, Result };
+
+#[derive(Deserialize)]
+pub(crate) struct AuthConfig {
+    pub(crate) auth: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct DockerConfig {
+    pub(crate) auths: Option<HashMap<String, AuthConfig>>,
+    pub(crate) creds_store: Option<String>,
+    pub(crate) cred_helpers: Option<HashMap<String, String>>,
+}
+
+pub(crate) fn read_config(config_dir: &Path) -> Result<DockerConfig> {
+    let config_path = config_dir.join("config.json");
+
+    let f = File::open(config_path).map_err(|_| CredentialRetrievalError::ConfigReadError)?;
+
+    serde_json::from_reader(f).map_err(|_| CredentialRetrievalError::ConfigReadError)
+}
