@@ -1,6 +1,8 @@
 docker_credential
 =================
 
+[![Build Status](https://travis-ci.org/keirlawson/docker_credential.svg?branch=master)](https://travis-ci.org/keirlawson/docker_credential)
+
 A Rust library for reading a user's Docker credentials from config.
 
 Parses a docker `config.json` either at the loction specified by the
