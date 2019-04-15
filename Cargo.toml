@@ -5,6 +5,8 @@ authors = ["Keir Lawson <keirlawson@gmail.com>"]
 edition = "2018"
 description = "Reads a user's docker credentials from config"
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/keirlawson/docker_credential"
+travis-ci = { repository = "keirlawson/docker_credential" }
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
