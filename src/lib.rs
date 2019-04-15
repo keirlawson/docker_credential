@@ -10,6 +10,7 @@ use std::error::Error;
 
 type Result<T> = std::result::Result<T, CredentialRetrievalError>;
 
+/// An error that occurred whilst attempting to retrieve a credential.
 #[derive(Debug, PartialEq)]
 pub enum CredentialRetrievalError {
     HelperCommunicationError,
@@ -39,6 +40,7 @@ impl fmt::Display for CredentialRetrievalError {
 
 impl Error for CredentialRetrievalError {}
 
+/// A docker credential, either a single identity token or a username/password pair.
 #[derive(Debug, PartialEq)]
 pub enum DockerCredential {
     IdentityToken(String),
@@ -86,6 +88,21 @@ fn extract_credential<T>(conf: config::DockerConfig, server: &str, from_helper: 
     Err(CredentialRetrievalError::NoCredentialConfigured)
 }
 
+/// Retrieve a user's docker credential via config.json.
+///
+/// If necessary, credential helpers/store will be invoked.
+///
+/// Example:
+/// ```
+/// use docker_credential::DockerCredential;
+///
+/// let credential = docker_credential::get_credential("https://index.docker.io/v1/").expect("Unable to retrieve credential");
+///
+/// match credential {
+///   DockerCredential::IdentityToken(token) => println!("Identity token: {}", token),
+///   DockerCredential::UsernamePassword(user_name, password) => println!("Username: {}, Password: {}", user_name, password),
+/// };
+/// ```
 pub fn get_credential(server: &str) -> Result<DockerCredential> {
     let dir = config_dir().ok_or(CredentialRetrievalError::ConfigNotFound)?;
     let conf = config::read_config(&dir)?;
