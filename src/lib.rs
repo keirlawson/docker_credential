@@ -93,7 +93,7 @@ fn extract_credential<T>(conf: config::DockerConfig, server: &str, from_helper: 
 /// If necessary, credential helpers/store will be invoked.
 ///
 /// Example:
-/// ```
+/// ```no_run
 /// use docker_credential::DockerCredential;
 ///
 /// let credential = docker_credential::get_credential("https://index.docker.io/v1/").expect("Unable to retrieve credential");
