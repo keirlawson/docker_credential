@@ -12,9 +12,21 @@ pub(crate) struct AuthConfig {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct DockerConfig {
-    pub(crate) auths: Option<HashMap<String, AuthConfig>>,
-    pub(crate) creds_store: Option<String>,
-    pub(crate) cred_helpers: Option<HashMap<String, String>>,
+    auths: Option<HashMap<String, AuthConfig>>,
+    creds_store: Option<String>,
+    cred_helpers: Option<HashMap<String, String>>,
+}
+
+impl DockerConfig {
+    pub fn get_auth(&self, server: &str) -> Option<String> {
+        self.auths
+            .and_then(|auths| auths.get(server))
+            .and_then(|auth_config| auth_config.auth)
+    }
+
+    pub fn get_helper(&self, server: &str) -> Option<String> {
+        self.cred_helpers.and_then(|foo| foo.get("bar"))
+    }
 }
 
 pub(crate) fn read_config(config_dir: &Path) -> Result<DockerConfig> {
