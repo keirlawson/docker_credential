@@ -17,6 +17,18 @@ pub(crate) struct DockerConfig {
     pub(crate) cred_helpers: Option<HashMap<String, String>>,
 }
 
+impl DockerConfig {
+    pub fn get_auth(&self, server: &str) -> Option<&String> {
+        self.auths.as_ref()
+            .and_then(|auths| auths.get(server))
+            .and_then(|auth_config| auth_config.auth.as_ref())
+    }
+
+    pub fn get_helper(&self, server: &str) -> Option<&String> {
+        self.cred_helpers.as_ref().and_then(|helpers| helpers.get(server))
+    }
+}
+
 pub(crate) fn read_config(config_dir: &Path) -> Result<DockerConfig> {
     let config_path = config_dir.join("config.json");
 

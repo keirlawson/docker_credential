@@ -67,18 +67,12 @@ fn extract_credential<T>(conf: config::DockerConfig, server: &str, from_helper: 
     where T: Fn(&str, &str) -> Result<DockerCredential>
 
 {
-    if let Some(helpers) = conf.cred_helpers {
-        if let Some(helper_name) = helpers.get(server) {
-            return from_helper(server, helper_name);
-        }
+    if let Some(helper_name) = conf.get_helper(server) {
+        return from_helper(server, helper_name);
     }
 
-    if let Some(auths) = conf.auths {
-        if let Some(auth_config) = auths.get(server) {
-            if let Some(auth) = &auth_config.auth {
-                return Ok(decode_auth(auth)?);
-            }
-        }
+    if let Some(auth) = conf.get_auth(server) {
+        return Ok(decode_auth(&auth)?);
     }
 
     if let Some(store_name) = conf.creds_store {
