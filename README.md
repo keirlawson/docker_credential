@@ -18,7 +18,7 @@ Add the following to your `cargo.toml`:
 
 ```toml
 [dependencies]
-docker_credential = "1.0"
+docker_credential = "1.0.1"
 ```
 
 Then invoke from within your along the lines of:
