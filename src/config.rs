@@ -13,19 +13,19 @@ pub(crate) struct AuthConfig {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct DockerConfig {
     auths: Option<HashMap<String, AuthConfig>>,
-    creds_store: Option<String>,
+    pub(crate) creds_store: Option<String>,
     cred_helpers: Option<HashMap<String, String>>,
 }
 
 impl DockerConfig {
-    pub fn get_auth(&self, server: &str) -> Option<String> {
-        self.auths
+    pub fn get_auth(&self, server: &str) -> Option<&String> {
+        self.auths.as_ref()
             .and_then(|auths| auths.get(server))
-            .and_then(|auth_config| auth_config.auth)
+            .and_then(|auth_config| auth_config.auth.as_ref())
     }
 
-    pub fn get_helper(&self, server: &str) -> Option<String> {
-        self.cred_helpers.and_then(|foo| foo.get("bar"))
+    pub fn get_helper(&self, server: &str) -> Option<&String> {
+        self.cred_helpers.as_ref().and_then(|helpers| helpers.get(server))
     }
 }
 
