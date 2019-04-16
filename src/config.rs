@@ -12,9 +12,9 @@ pub(crate) struct AuthConfig {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct DockerConfig {
-    auths: Option<HashMap<String, AuthConfig>>,
+    pub(crate) auths: Option<HashMap<String, AuthConfig>>,
     pub(crate) creds_store: Option<String>,
-    cred_helpers: Option<HashMap<String, String>>,
+    pub(crate) cred_helpers: Option<HashMap<String, String>>,
 }
 
 impl DockerConfig {
