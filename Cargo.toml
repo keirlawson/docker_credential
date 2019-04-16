@@ -6,6 +6,11 @@ edition = "2018"
 description = "Reads a user's docker credentials from config"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/keirlawson/docker_credential"
+readme = "README.md"
+categories = ["authentication", "config"]
+keywords = ["docker", "credential", "container"]
+
+[badges]
 travis-ci = { repository = "keirlawson/docker_credential" }
 
 [dependencies]
