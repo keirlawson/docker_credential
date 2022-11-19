@@ -1,7 +1,6 @@
 mod config;
 mod helper;
 
-use base64;
 use std::env;
 use std::error::Error;
 use std::fmt;
@@ -87,7 +86,7 @@ where
     }
 
     if let Some(auth) = conf.get_auth(server) {
-        return Ok(decode_auth(&auth)?);
+        return decode_auth(auth);
     }
 
     if let Some(store_name) = conf.creds_store {
