@@ -34,7 +34,7 @@ fn response_from_helper(address: &str, helper: &str) -> Result<HelperResponse> {
     if output.status.success() {
         let parsed = serde_json::from_slice(&output.stdout)
             .map_err(|_| CredentialRetrievalError::MalformedHelperResponse)?;
-        return Ok(parsed);
+        Ok(parsed)
     } else {
         Err(CredentialRetrievalError::HelperFailure)
     }
