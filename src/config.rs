@@ -1,8 +1,8 @@
+use super::{CredentialRetrievalError, Result};
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs::File;
-use serde::Deserialize;
 use std::path::Path;
-use super::{ CredentialRetrievalError, Result };
 
 #[derive(Deserialize)]
 pub(crate) struct AuthConfig {
@@ -19,13 +19,16 @@ pub(crate) struct DockerConfig {
 
 impl DockerConfig {
     pub fn get_auth(&self, server: &str) -> Option<&String> {
-        self.auths.as_ref()
+        self.auths
+            .as_ref()
             .and_then(|auths| auths.get(server))
             .and_then(|auth_config| auth_config.auth.as_ref())
     }
 
     pub fn get_helper(&self, server: &str) -> Option<&String> {
-        self.cred_helpers.as_ref().and_then(|helpers| helpers.get(server))
+        self.cred_helpers
+            .as_ref()
+            .and_then(|helpers| helpers.get(server))
     }
 }
 
