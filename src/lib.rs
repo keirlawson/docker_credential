@@ -14,7 +14,7 @@ type Result<T> = std::result::Result<T, CredentialRetrievalError>;
 pub enum CredentialRetrievalError {
     HelperCommunicationError,
     MalformedHelperResponse,
-    HelperFailure,
+    HelperFailure { stdout: String, stderr: String },
     CredentialDecodingError,
     NoCredentialConfigured,
     ConfigNotFound,
@@ -23,22 +23,30 @@ pub enum CredentialRetrievalError {
 
 impl fmt::Display for CredentialRetrievalError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let message = match self {
+        match self {
             CredentialRetrievalError::HelperCommunicationError => {
-                "Unable to communicate with credential helper"
+                write!(f, "Unable to communicate with credential helper")
             }
             CredentialRetrievalError::MalformedHelperResponse => {
-                "Credential helper response malformed"
+                write!(f, "Credential helper response malformed")
             }
-            CredentialRetrievalError::HelperFailure => {
-                "Credential helper returned non-zero response code"
+            CredentialRetrievalError::HelperFailure { stdout, stderr } => {
+                write!(
+                    f,
+                    "Credential helper returned non-zero response code:\n\
+                    stdout:\n{stdout}\n\n\
+                    stderr:\n{stderr}\n",
+                )
             }
-            CredentialRetrievalError::CredentialDecodingError => "Unable to decode credential",
-            CredentialRetrievalError::NoCredentialConfigured => "User has no credential configured",
-            CredentialRetrievalError::ConfigNotFound => "No config file found",
-            CredentialRetrievalError::ConfigReadError => "Unable to read config",
-        };
-        write!(f, "{}", message)
+            CredentialRetrievalError::CredentialDecodingError => {
+                write!(f, "Unable to decode credential")
+            }
+            CredentialRetrievalError::NoCredentialConfigured => {
+                write!(f, "User has no credential configured")
+            }
+            CredentialRetrievalError::ConfigNotFound => write!(f, "No config file found"),
+            CredentialRetrievalError::ConfigReadError => write!(f, "Unable to read config"),
+        }
     }
 }
 
