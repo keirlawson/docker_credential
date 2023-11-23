@@ -1,6 +1,6 @@
 [package]
 name = "docker_credential"
-version = "1.2.0"
+version = "1.2.1"
 authors = ["Keir Lawson <keirlawson@gmail.com>"]
 edition = "2018"
 description = "Reads a user's docker credentials from config"
