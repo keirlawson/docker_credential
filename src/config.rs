@@ -39,7 +39,7 @@ impl DockerConfig {
     pub fn get_helper(&self, server: &str) -> Option<&String> {
         self.cred_helpers
             .as_ref()
-            .and_then(|helpers| helpers.get(server))
+            .and_then(|helpers| helpers.get(server).filter(|s| !s.is_empty()))
     }
 }
 
