@@ -6,6 +6,8 @@ use std::error::Error;
 use std::fmt;
 use std::path::{Path, PathBuf};
 use std::str;
+use base64::Engine;
+use base64::engine::general_purpose;
 
 type Result<T> = std::result::Result<T, CredentialRetrievalError>;
 
@@ -67,7 +69,7 @@ fn config_dir() -> Option<PathBuf> {
 }
 
 fn decode_auth(encoded_auth: &str) -> Result<DockerCredential> {
-    let decoded = base64::decode(encoded_auth)
+    let decoded = general_purpose::STANDARD_NO_PAD.decode(encoded_auth)
         .map_err(|_| CredentialRetrievalError::CredentialDecodingError)?;
     let decoded =
         str::from_utf8(&decoded).map_err(|_| CredentialRetrievalError::CredentialDecodingError)?;
@@ -149,7 +151,7 @@ mod tests {
 
     #[test]
     fn decodes_auth_when_no_helpers() {
-        let encoded_auth = base64::encode("some_user:some_password");
+        let encoded_auth = general_purpose::STANDARD_NO_PAD.encode("some_user:some_password");
         let mut auths = HashMap::new();
         auths.insert(
             String::from("some server"),
