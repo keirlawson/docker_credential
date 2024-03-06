@@ -1,13 +1,13 @@
 mod config;
 mod helper;
 
+use base64::engine::general_purpose;
+use base64::Engine;
 use std::env;
 use std::error::Error;
 use std::fmt;
 use std::path::{Path, PathBuf};
 use std::str;
-use base64::Engine;
-use base64::engine::general_purpose;
 
 type Result<T> = std::result::Result<T, CredentialRetrievalError>;
 
@@ -69,7 +69,13 @@ fn config_dir() -> Option<PathBuf> {
 }
 
 fn decode_auth(encoded_auth: &str) -> Result<DockerCredential> {
-    let decoded = general_purpose::STANDARD_NO_PAD.decode(encoded_auth)
+    let config = general_purpose::GeneralPurposeConfig::new()
+        .with_decode_padding_mode(base64::engine::DecodePaddingMode::Indifferent);
+
+    let engine = general_purpose::GeneralPurpose::new(&base64::alphabet::STANDARD, config);
+
+    let decoded = engine
+        .decode(encoded_auth)
         .map_err(|_| CredentialRetrievalError::CredentialDecodingError)?;
     let decoded =
         str::from_utf8(&decoded).map_err(|_| CredentialRetrievalError::CredentialDecodingError)?;
