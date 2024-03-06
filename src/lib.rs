@@ -6,6 +6,8 @@ use base64::Engine;
 use std::env;
 use std::error::Error;
 use std::fmt;
+use std::fs::File;
+use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::str;
 
@@ -64,7 +66,7 @@ pub enum DockerCredential {
 fn config_dir() -> Option<PathBuf> {
     let home_config = || env::var_os("HOME").map(|home| Path::new(&home).join(".docker"));
     env::var_os("DOCKER_CONFIG")
-        .map(|dir| Path::new(&dir).to_path_buf())
+        .map(PathBuf::from)
         .or_else(home_config)
 }
 
@@ -80,7 +82,7 @@ fn decode_auth(encoded_auth: &str) -> Result<DockerCredential> {
     let decoded =
         str::from_utf8(&decoded).map_err(|_| CredentialRetrievalError::CredentialDecodingError)?;
     let parts: Vec<&str> = decoded.splitn(2, ':').collect();
-    let username = String::from(*parts.get(0).unwrap());
+    let username = String::from(*parts.first().unwrap());
     let password = String::from(
         *parts
             .get(1)
@@ -112,6 +114,32 @@ where
     Err(CredentialRetrievalError::NoCredentialConfigured)
 }
 
+/// Retrieve a user's docker credential from a given reader.
+///
+/// Example:
+/// ```no_run
+/// use std::{fs::File, io::BufReader};
+/// use docker_credential::DockerCredential;
+///
+/// let file = File::open("config.json").expect("Unable to open config file");
+///
+/// let reader = BufReader::new(file);
+///
+/// let credential = docker_credential::get_credential_from_reader(reader, "https://index.docker.io/v1/").expect("Unable to retrieve credential");
+///
+/// match credential {
+///   DockerCredential::IdentityToken(token) => println!("Identity token: {}", token),
+///   DockerCredential::UsernamePassword(user_name, password) => println!("Username: {}, Password: {}", user_name, password),
+/// };
+/// ```
+pub fn get_credential_from_reader(
+    reader: impl std::io::Read,
+    server: &str,
+) -> Result<DockerCredential> {
+    let conf = config::read_config(reader)?;
+    extract_credential(conf, server, helper::credential_from_helper)
+}
+
 /// Retrieve a user's docker credential via config.json.
 ///
 /// If necessary, credential helpers/store will be invoked.
@@ -128,9 +156,49 @@ where
 /// };
 /// ```
 pub fn get_credential(server: &str) -> Result<DockerCredential> {
-    let dir = config_dir().ok_or(CredentialRetrievalError::ConfigNotFound)?;
-    let conf = config::read_config(&dir)?;
-    extract_credential(conf, server, helper::credential_from_helper)
+    let config_path = config_dir()
+        .ok_or(CredentialRetrievalError::ConfigNotFound)?
+        .join("config.json");
+
+    let f = File::open(config_path).map_err(|_| CredentialRetrievalError::ConfigReadError)?;
+
+    get_credential_from_reader(BufReader::new(f), server)
+}
+
+/// Retrieve a user's docker credential from auth.json (as used by podman).
+///
+/// The lookup strategy adheres to the logic described
+/// [in the podman docs](https://docs.podman.io/en/stable/markdown/podman-login.1.html#authfile-path).
+///
+/// For a usage example, refer to [`get_credential`].
+pub fn get_podman_credential(server: &str) -> Result<DockerCredential> {
+    let config_path = if let Some(auth_path) = env::var_os("REGISTRY_AUTH_FILE") {
+        PathBuf::from(auth_path)
+    } else {
+        let primary_path = if cfg!(target_os = "linux") {
+            env::var_os("XDG_RUNTIME_DIR")
+                .map(PathBuf::from)
+                .ok_or(CredentialRetrievalError::ConfigNotFound)?
+                .join("containers/auth.json")
+        } else {
+            env::var_os("HOME")
+                .map(PathBuf::from)
+                .ok_or(CredentialRetrievalError::ConfigNotFound)?
+                .join(".config/containers/auth.json")
+        };
+
+        if primary_path.is_file() {
+            primary_path
+        } else {
+            config_dir()
+                .ok_or(CredentialRetrievalError::ConfigNotFound)?
+                .join("containers/auth.json")
+        }
+    };
+
+    let f = File::open(config_path).map_err(|_| CredentialRetrievalError::ConfigReadError)?;
+
+    get_credential_from_reader(BufReader::new(f), server)
 }
 
 #[cfg(test)]
@@ -162,7 +230,7 @@ mod tests {
         auths.insert(
             String::from("some server"),
             config::AuthConfig {
-                auth: Some(String::from(encoded_auth)),
+                auth: Some(encoded_auth),
             },
         );
         let auth_config = config::DockerConfig {
@@ -229,7 +297,7 @@ mod tests {
             cred_helpers: Some(helpers),
         };
         let dummy_helper = |address: &str, helper: &str| {
-            if address == String::from("some server") && helper == String::from("some_helper") {
+            if address == "some server" && helper == "some_helper" {
                 Ok(DockerCredential::IdentityToken(String::from(
                     "expected_token",
                 )))
@@ -255,7 +323,7 @@ mod tests {
             cred_helpers: None,
         };
         let dummy_helper = |address: &str, helper: &str| {
-            if address == String::from("some server") && helper == String::from("cred_store") {
+            if address == "some server" && helper == "cred_store" {
                 Ok(DockerCredential::IdentityToken(String::from(
                     "expected_token",
                 )))

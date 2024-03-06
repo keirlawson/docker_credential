@@ -1,8 +1,7 @@
 use super::{CredentialRetrievalError, Result};
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::fs::File;
-use std::path::Path;
+use std::io::Read;
 
 #[derive(Deserialize)]
 pub(crate) struct AuthConfig {
@@ -43,12 +42,8 @@ impl DockerConfig {
     }
 }
 
-pub(crate) fn read_config(config_dir: &Path) -> Result<DockerConfig> {
-    let config_path = config_dir.join("config.json");
-
-    let f = File::open(config_path).map_err(|_| CredentialRetrievalError::ConfigReadError)?;
-
-    serde_json::from_reader(f).map_err(|_| CredentialRetrievalError::ConfigReadError)
+pub(crate) fn read_config(reader: impl Read) -> Result<DockerConfig> {
+    serde_json::from_reader(reader).map_err(|_| CredentialRetrievalError::ConfigReadError)
 }
 
 /// Normalizes a given key (image reference) into its resulting registry
