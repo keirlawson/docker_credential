@@ -184,6 +184,42 @@ mod tests {
     }
 
     #[test]
+    fn decodes_regardless_of_padding() {
+        let encoded_auths = [
+            general_purpose::STANDARD.encode("some_user:some_password"),
+            general_purpose::STANDARD_NO_PAD.encode("some_user:some_password"),
+        ];
+
+        let dummy_helper =
+            |_: &str, _: &str| Err(CredentialRetrievalError::HelperCommunicationError);
+
+        for encoded_auth in encoded_auths {
+            let auths = HashMap::from([(
+                String::from("some server"),
+                config::AuthConfig {
+                    auth: Some(encoded_auth),
+                },
+            )]);
+
+            let auth_config = config::DockerConfig {
+                auths: Some(auths),
+                creds_store: None,
+                cred_helpers: None,
+            };
+
+            let result = extract_credential(auth_config, "some server", dummy_helper);
+
+            assert_eq!(
+                result,
+                Ok(DockerCredential::UsernamePassword(
+                    String::from("some_user"),
+                    String::from("some_password")
+                ))
+            );
+        }
+    }
+
+    #[test]
     fn gets_credential_from_helper() {
         let mut helpers = HashMap::new();
         helpers.insert(String::from("some server"), String::from("some_helper"));
