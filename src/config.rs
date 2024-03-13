@@ -6,6 +6,7 @@ use std::io::Read;
 #[derive(Deserialize)]
 pub(crate) struct AuthConfig {
     pub(crate) auth: Option<String>,
+    pub(crate) identitytoken: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -29,6 +30,24 @@ impl DockerConfig {
                 .find(|(key, _)| normalize_key_to_registry(key) == image_registry)
             {
                 return auth_str.auth.as_ref();
+            }
+        }
+
+        None
+    }
+
+    pub fn get_identity_token(&self, image_registry: &str) -> Option<&String> {
+        if let Some(auths) = &self.auths {
+            if let Some(auth_config) = auths.get(image_registry) {
+                return auth_config.identitytoken.as_ref();
+            }
+
+            let image_registry = normalize_registry(image_registry);
+            if let Some((_, auth_config)) = auths
+                .iter()
+                .find(|(key, _)| normalize_key_to_registry(key) == image_registry)
+            {
+                return auth_config.identitytoken.as_ref();
             }
         }
 

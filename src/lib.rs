@@ -103,6 +103,10 @@ where
         return from_helper(server, helper_name);
     }
 
+    if let Some(identity_token) = conf.get_identity_token(server) {
+        return Ok(DockerCredential::IdentityToken(identity_token.to_string()));
+    }
+
     if let Some(auth) = conf.get_auth(server) {
         return decode_auth(auth);
     }
@@ -231,6 +235,7 @@ mod tests {
             String::from("some server"),
             config::AuthConfig {
                 auth: Some(encoded_auth),
+                identitytoken: None,
             },
         );
         let auth_config = config::DockerConfig {
@@ -266,6 +271,7 @@ mod tests {
                 String::from("some server"),
                 config::AuthConfig {
                     auth: Some(encoded_auth),
+                    identitytoken: None,
                 },
             )]);
 
