@@ -12,7 +12,7 @@ struct HelperResponse {
 
 fn response_from_helper(address: &str, helper: &str) -> Result<HelperResponse> {
     let full_helper_name = format!("docker-credential-{}", helper);
-    let mut process = Command::new(full_helper_name)
+    let mut process = Command::new(&full_helper_name)
         .arg("get")
         .stdin(Stdio::piped())
         .stderr(Stdio::piped())
@@ -37,6 +37,7 @@ fn response_from_helper(address: &str, helper: &str) -> Result<HelperResponse> {
         Ok(parsed)
     } else {
         Err(CredentialRetrievalError::HelperFailure {
+            helper: full_helper_name,
             stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
             stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
         })

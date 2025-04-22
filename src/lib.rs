@@ -18,7 +18,11 @@ type Result<T> = std::result::Result<T, CredentialRetrievalError>;
 pub enum CredentialRetrievalError {
     HelperCommunicationError,
     MalformedHelperResponse,
-    HelperFailure { stdout: String, stderr: String },
+    HelperFailure {
+        helper: String,
+        stdout: String,
+        stderr: String,
+    },
     CredentialDecodingError,
     NoCredentialConfigured,
     ConfigNotFound,
@@ -34,10 +38,14 @@ impl fmt::Display for CredentialRetrievalError {
             CredentialRetrievalError::MalformedHelperResponse => {
                 write!(f, "Credential helper response malformed")
             }
-            CredentialRetrievalError::HelperFailure { stdout, stderr } => {
+            CredentialRetrievalError::HelperFailure {
+                helper,
+                stdout,
+                stderr,
+            } => {
                 write!(
                     f,
-                    "Credential helper returned non-zero response code:\n\
+                    "Credential helper `{helper}` returned non-zero response code:\n\
                     stdout:\n{stdout}\n\n\
                     stderr:\n{stderr}\n",
                 )
