@@ -91,11 +91,8 @@ fn decode_auth(encoded_auth: &str) -> Result<DockerCredential> {
         str::from_utf8(&decoded).map_err(|_| CredentialRetrievalError::CredentialDecodingError)?;
     let parts: Vec<&str> = decoded.splitn(2, ':').collect();
     let username = String::from(*parts.first().unwrap());
-    let password = String::from(
-        *parts
-            .get(1)
-            .ok_or(CredentialRetrievalError::CredentialDecodingError)?,
-    );
+    let password = String::from(parts[1..].join(":"));
+
     Ok(DockerCredential::UsernamePassword(username, password))
 }
 
