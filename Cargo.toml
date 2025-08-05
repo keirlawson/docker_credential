@@ -17,4 +17,4 @@ base64 = "0.21.7"
 
 [dev-dependencies]
 clap = { version = "4.5.37", features = ["derive"] }
-rstest = "0.23.0"
+rstest = "0.26.1"
