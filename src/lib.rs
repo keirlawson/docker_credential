@@ -24,6 +24,7 @@ pub enum CredentialRetrievalError {
         stderr: String,
     },
     CredentialDecodingError,
+    CredentialMismatchError,
     NoCredentialConfigured,
     ConfigNotFound,
     ConfigReadError,
@@ -52,6 +53,12 @@ impl fmt::Display for CredentialRetrievalError {
             }
             CredentialRetrievalError::CredentialDecodingError => {
                 write!(f, "Unable to decode credential")
+            }
+            CredentialRetrievalError::CredentialMismatchError => {
+                write!(
+                    f,
+                    "auth field does not match username and password fields"
+                )
             }
             CredentialRetrievalError::NoCredentialConfigured => {
                 write!(f, "User has no credential configured")
@@ -116,7 +123,22 @@ where
     }
 
     if let Some(auth) = conf.get_auth(server) {
-        return decode_auth(auth);
+        let credential = decode_auth(auth)?;
+        if let Some((username, password)) = conf.get_username_password(server) {
+            // Both auth and username/password are present: verify they are consistent
+            let expected = DockerCredential::UsernamePassword(username.clone(), password.clone());
+            if credential != expected {
+                return Err(CredentialRetrievalError::CredentialMismatchError);
+            }
+        }
+        return Ok(credential);
+    }
+
+    if let Some((username, password)) = conf.get_username_password(server) {
+        return Ok(DockerCredential::UsernamePassword(
+            username.clone(),
+            password.clone(),
+        ));
     }
 
     if let Some(store_name) = conf.creds_store {
@@ -243,6 +265,8 @@ mod tests {
             String::from("some server"),
             config::AuthConfig {
                 auth: Some(encoded_auth),
+                username: None,
+                password: None,
                 identitytoken: None,
             },
         );
@@ -279,6 +303,8 @@ mod tests {
                 String::from("some server"),
                 config::AuthConfig {
                     auth: Some(encoded_auth),
+                    username: None,
+                    password: None,
                     identitytoken: None,
                 },
             )]);
@@ -353,5 +379,91 @@ mod tests {
                 "expected_token"
             )))
         );
+    }
+
+    #[test]
+    fn plain_username_password_no_auth() {
+        let auths = HashMap::from([(
+            String::from("some server"),
+            config::AuthConfig {
+                auth: None,
+                username: Some(String::from("some_user")),
+                password: Some(String::from("some_password")),
+                identitytoken: None,
+            },
+        )]);
+        let auth_config = config::DockerConfig {
+            auths: Some(auths),
+            creds_store: None,
+            cred_helpers: None,
+        };
+        let dummy_helper =
+            |_: &str, _: &str| Err(CredentialRetrievalError::HelperCommunicationError);
+        let result = extract_credential(auth_config, "some server", dummy_helper);
+
+        assert_eq!(
+            result,
+            Ok(DockerCredential::UsernamePassword(
+                String::from("some_user"),
+                String::from("some_password")
+            ))
+        );
+    }
+
+    #[test]
+    fn auth_matches_username_password() {
+        let encoded_auth =
+            general_purpose::STANDARD_NO_PAD.encode("some_user:some_password");
+        let auths = HashMap::from([(
+            String::from("some server"),
+            config::AuthConfig {
+                auth: Some(encoded_auth),
+                username: Some(String::from("some_user")),
+                password: Some(String::from("some_password")),
+                identitytoken: None,
+            },
+        )]);
+        let auth_config = config::DockerConfig {
+            auths: Some(auths),
+            creds_store: None,
+            cred_helpers: None,
+        };
+        let dummy_helper =
+            |_: &str, _: &str| Err(CredentialRetrievalError::HelperCommunicationError);
+        let result = extract_credential(auth_config, "some server", dummy_helper);
+
+        assert_eq!(
+            result,
+            Ok(DockerCredential::UsernamePassword(
+                String::from("some_user"),
+                String::from("some_password")
+            ))
+        );
+    }
+
+    #[test]
+    fn auth_mismatches_username_password() {
+        // auth encodes different credentials than username/password fields
+        let encoded_auth =
+            general_purpose::STANDARD_NO_PAD.encode("other_user:other_password");
+        let auths = HashMap::from([(
+            String::from("some server"),
+            config::AuthConfig {
+                auth: Some(encoded_auth),
+                username: Some(String::from("some_user")),
+                password: Some(String::from("some_password")),
+                identitytoken: None,
+            },
+        )]);
+        let auth_config = config::DockerConfig {
+            auths: Some(auths),
+            creds_store: None,
+            cred_helpers: None,
+        };
+        let dummy_helper =
+            |_: &str, _: &str| Err(CredentialRetrievalError::HelperCommunicationError);
+        let result = extract_credential(auth_config, "some server", dummy_helper);
+
+        assert_eq!(result, Err(CredentialRetrievalError::CredentialMismatchError));
     }
 }
